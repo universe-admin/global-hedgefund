@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "global-hedgefund"
+version = "0.1.0"
+description = "A full hedge-fund desk: multi-agent research (TradingAgents-style), market data (OpenBB/yfinance), and a learning orchestrator brain (Hermes)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Global Hedgefund" }]
+dependencies = []
+
+[project.optional-dependencies]
+llm = ["anthropic>=0.40"]
+data = ["yfinance>=0.2.40"]
+openbb = ["openbb>=4.3"]
+all = ["anthropic>=0.40", "yfinance>=0.2.40", "openbb>=4.3"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+hedgefund = "hedgefund.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["hedgefund*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
