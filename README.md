@@ -104,6 +104,33 @@ WRITTEN THESIS — NVDA · today $193.00
 Risk policy (single-name cap, gross cap, stops, debate rounds, CAPM inputs,
 Monte Carlo paths) lives in `hedgefund/config.py` as one dataclass.
 
+## Backtesting & next-day prediction (NSE · BSE · NASDAQ · NYSE)
+
+```bash
+hedgefund backtest nse            # walk-forward backtest of next-day calls
+hedgefund backtest all            # ...across all four exchanges
+hedgefund predict nse             # tomorrow's calibrated outlook for NSE
+hedgefund predict nse --tickers RELIANCE.NS TCS.NS   # custom universe
+```
+
+The engine walks each tape day by day with **zero look-ahead**: features for
+day *t* come strictly from bars `[0..t]`, an online logistic model predicts
+tomorrow *before* seeing the label (prequential protocol, 120-day burn-in),
+and for Indian markets it adds the one legitimate cross-market lead — the
+**prior US session** (which ends hours before the NSE/BSE open). Fundamentals
+and news are deliberately excluded from the backtest: point-in-time history
+for them isn't available, and using today's values would leak.
+
+Every `predict` ships with its receipts: the pooled backtested accuracy vs.
+the always-up baseline, a Brier score, and a **calibration table** mapping
+each emitted probability bucket to how often the market actually closed up.
+If the model has no edge in a window, the report says so in plain text.
+
+**Honesty note:** next-day market direction is close to a coin flip;
+world-class is a low-single-digit edge over baseline, sustained. Any tool
+promising "utmost accuracy" on tomorrow's close is lying to you — this one
+measures and reports what it actually achieves instead.
+
 ## Tests
 
 ```bash

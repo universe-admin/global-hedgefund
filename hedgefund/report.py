@@ -133,3 +133,57 @@ def render_screen(runs: List[DeskRun]) -> str:
             f"{r.verdict.size_pct_nav*100:4.1f}%  "
             f"{r.research.score:+.2f}     {r.research.headline}")
     return "\n".join(out)
+
+
+def render_backtest(report) -> str:
+    from hedgefund.backtest.engine import BacktestReport  # noqa: F401
+    out: List[str] = []
+    out.append(_title(
+        f"WALK-FORWARD BACKTEST — {report.exchange.upper()} · "
+        f"{report.n_scored:,} scored predictions"))
+    out.append(
+        f"pooled next-day accuracy {report.pooled_accuracy*100:.1f}% · "
+        f"baseline (always-up/down) {report.pooled_baseline*100:.1f}% · "
+        f"Brier {report.pooled_brier:.4f}")
+    edge = report.pooled_accuracy - report.pooled_baseline
+    out.append(f"edge over baseline: {edge*100:+.1f}pp "
+               f"{'(real but modest — this is what honest looks like)' if edge > 0 else '(no edge in this window)'}")
+
+    out.append(f"\n{'ticker':<14}{'days':>6}{'acc':>8}{'base':>8}"
+               f"{'brier':>8}{'strat':>9}{'b&h':>9}")
+    for r in report.results:
+        out.append(
+            f"{r.ticker:<14}{r.n_scored:>6}{r.accuracy*100:>7.1f}%"
+            f"{r.baseline*100:>7.1f}%{r.brier:>8.3f}"
+            f"{r.strategy_return*100:>+8.1f}%{r.buy_hold_return*100:>+8.1f}%")
+
+    if report.calibration:
+        out.append("\nCALIBRATION (predicted P(up) bucket -> what actually happened)")
+        for bucket, s in report.calibration.items():
+            out.append(f"    {bucket:<10} n={int(s['n']):>5}   "
+                       f"realized up-rate {s['realized_up_rate']*100:.1f}%")
+    out.append("\nProtocol: prequential walk-forward, features from bars [0..t] only,")
+    out.append("120-day burn-in, cross-market lead uses prior foreign session only.")
+    return "\n".join(out)
+
+
+def render_predictions(report, preds) -> str:
+    out: List[str] = []
+    out.append(_title(
+        f"NEXT-SESSION OUTLOOK — {report.exchange.upper()} · "
+        f"as of {preds[0].as_of if preds else 'n/a'}"))
+    out.append(f"{'ticker':<14}{'P(up)':>7}{'call':>14}{'~1σ move':>10}"
+               f"{'bucket hit-rate':>17}{'days':>7}")
+    for p in preds:
+        hr = (f"{p.backtested_bucket_hit_rate*100:.0f}%"
+              if p.backtested_bucket_hit_rate is not None else "n/a")
+        out.append(
+            f"{p.ticker:<14}{p.prob_up*100:>6.1f}%{p.direction:>14}"
+            f"{p.expected_move_pct*100:>9.2f}%{hr:>17}{p.n_backtest_days:>7}")
+    out.append(
+        "\nRead 'bucket hit-rate' as the honest accuracy: when the model said a"
+        "\nprobability in this bucket during the backtest, that is how often the"
+        "\nmarket actually closed up. Next-day direction is ~coin-flip hard;"
+        "\nanything a few points over baseline is the realistic ceiling."
+        "\nEducation only — not financial advice.")
+    return "\n".join(out)

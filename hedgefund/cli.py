@@ -60,6 +60,22 @@ def _build_parser() -> argparse.ArgumentParser:
     grade.add_argument("run_id")
 
     sub.add_parser("scorecard", help="Hermes' graded hit rate")
+
+    bt = sub.add_parser(
+        "backtest",
+        help="walk-forward backtest of next-day predictions on an exchange")
+    bt.add_argument("exchange", choices=["nse", "bse", "nasdaq", "nyse", "all"])
+    bt.add_argument("--days", type=int, default=900,
+                    help="lookback window in trading days")
+    bt.add_argument("--tickers", nargs="*", default=None,
+                    help="override the exchange's default universe")
+
+    pr = sub.add_parser(
+        "predict",
+        help="backtest, then emit tomorrow's calibrated outlook")
+    pr.add_argument("exchange", choices=["nse", "bse", "nasdaq", "nyse"])
+    pr.add_argument("--days", type=int, default=900)
+    pr.add_argument("--tickers", nargs="*", default=None)
     return p
 
 
@@ -129,6 +145,35 @@ def main(argv=None) -> int:
 
     elif args.cmd == "scorecard":
         print(json.dumps(brain.memory.scorecard(), indent=2))
+
+    elif args.cmd == "backtest":
+        from hedgefund.backtest.engine import run_backtest
+        from hedgefund.report import render_backtest
+        exchanges = (["nse", "bse", "nasdaq", "nyse"]
+                     if args.exchange == "all" else [args.exchange])
+        for ex in exchanges:
+            report = run_backtest(ex, brain.provider,
+                                  lookback_days=args.days,
+                                  tickers=args.tickers or None)
+            if args.json:
+                print(json.dumps(asdict(report), indent=2, default=str))
+            else:
+                print(render_backtest(report))
+
+    elif args.cmd == "predict":
+        from hedgefund.backtest.engine import predict_next_day
+        from hedgefund.report import render_backtest, render_predictions
+        report, preds = predict_next_day(args.exchange, brain.provider,
+                                         lookback_days=args.days,
+                                         tickers=args.tickers or None)
+        if args.json:
+            print(json.dumps({
+                "backtest": asdict(report),
+                "predictions": [asdict(p) for p in preds],
+            }, indent=2, default=str))
+        else:
+            print(render_backtest(report))
+            print(render_predictions(report, preds))
 
     return 0
 
