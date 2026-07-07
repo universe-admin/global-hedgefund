@@ -162,7 +162,9 @@ def run_backtest(exchange: str, provider: MarketDataProvider,
         bars = provider.snapshot(sym, lookback_days).bars
         if len(bars) < WARMUP + BURN_IN + 20:
             continue
-        scored, model, last_x = _run_single(bars, lead_rets, calib)
+        # the lead symbol must not lead itself (it would double-count ret_1d)
+        sym_lead = None if sym == lead_symbol else lead_rets
+        scored, model, last_x = _run_single(bars, sym_lead, calib)
         all_scored.extend(scored)
         report.results.append(_summarize(sym, bars, scored, model, last_x))
 

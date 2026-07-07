@@ -104,12 +104,13 @@ WRITTEN THESIS — NVDA · today $193.00
 Risk policy (single-name cap, gross cap, stops, debate rounds, CAPM inputs,
 Monte Carlo paths) lives in `hedgefund/config.py` as one dataclass.
 
-## Backtesting & next-day prediction (NSE · BSE · NASDAQ · NYSE)
+## Backtesting & next-day prediction (NSE · BSE · NASDAQ · NYSE · crypto)
 
 ```bash
 hedgefund backtest nse            # walk-forward backtest of next-day calls
-hedgefund backtest all            # ...across all four exchanges
+hedgefund backtest all            # ...across all five markets
 hedgefund predict nse             # tomorrow's calibrated outlook for NSE
+hedgefund predict crypto          # BTC/ETH/SOL/... next-day outlook
 hedgefund predict nse --tickers RELIANCE.NS TCS.NS   # custom universe
 ```
 
@@ -117,7 +118,8 @@ The engine walks each tape day by day with **zero look-ahead**: features for
 day *t* come strictly from bars `[0..t]`, an online logistic model predicts
 tomorrow *before* seeing the label (prequential protocol, 120-day burn-in),
 and for Indian markets it adds the one legitimate cross-market lead — the
-**prior US session** (which ends hours before the NSE/BSE open). Fundamentals
+**prior US session** (which ends hours before the NSE/BSE open); for crypto
+the lead is intra-market — BTC's prior day feeds the altcoins. Fundamentals
 and news are deliberately excluded from the backtest: point-in-time history
 for them isn't available, and using today's values would leak.
 
@@ -138,9 +140,10 @@ pip install -e ".[dev]"
 pytest
 ```
 
-The suite (34 tests) runs entirely offline against the deterministic provider:
+The suite (43 tests) runs entirely offline against the deterministic provider:
 data layer, all seven analysts, the debate, trader sizing, risk gates, the
-verdict, DCF/Monte Carlo, the book, exit rules, the learning loop, and the CLI.
+verdict, DCF/Monte Carlo, the book, exit rules, the learning loop, the
+walk-forward backtester (including a no-look-ahead property test), and the CLI.
 
 ## Disclaimer
 

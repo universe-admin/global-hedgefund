@@ -120,3 +120,28 @@ def test_cli_backtest_and_predict(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "NEXT-SESSION OUTLOOK — NSE" in out
     assert "not financial advice" in out
+
+
+def test_crypto_universe_backtest():
+    provider = OfflineProvider()
+    report = run_backtest("crypto", provider, lookback_days=500)
+    assert report.results
+    assert {r.ticker for r in report.results} <= {
+        "BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD",
+        "XRP-USD", "ADA-USD", "DOGE-USD", "AVAX-USD"}
+    assert report.n_scored > 500
+    assert report.calibration
+
+
+def test_crypto_predict_and_cli(tmp_path, monkeypatch, capsys):
+    provider = OfflineProvider()
+    report, preds = predict_next_day("crypto", provider, lookback_days=500)
+    assert any(p.ticker == "BTC-USD" for p in preds)
+    monkeypatch.setenv("HEDGEFUND_HOME", str(tmp_path / ".hedgefund"))
+    monkeypatch.setenv("HEDGEFUND_DATA", "offline")
+    monkeypatch.setenv("HEDGEFUND_LLM", "off")
+    from hedgefund import cli
+    assert cli.main(["predict", "crypto", "--days", "450"]) == 0
+    out = capsys.readouterr().out
+    assert "NEXT-SESSION OUTLOOK — CRYPTO" in out
+    assert "BTC-USD" in out

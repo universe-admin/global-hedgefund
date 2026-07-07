@@ -64,7 +64,8 @@ def _build_parser() -> argparse.ArgumentParser:
     bt = sub.add_parser(
         "backtest",
         help="walk-forward backtest of next-day predictions on an exchange")
-    bt.add_argument("exchange", choices=["nse", "bse", "nasdaq", "nyse", "all"])
+    bt.add_argument("exchange",
+                choices=["nse", "bse", "nasdaq", "nyse", "crypto", "all"])
     bt.add_argument("--days", type=int, default=900,
                     help="lookback window in trading days")
     bt.add_argument("--tickers", nargs="*", default=None,
@@ -73,7 +74,8 @@ def _build_parser() -> argparse.ArgumentParser:
     pr = sub.add_parser(
         "predict",
         help="backtest, then emit tomorrow's calibrated outlook")
-    pr.add_argument("exchange", choices=["nse", "bse", "nasdaq", "nyse"])
+    pr.add_argument("exchange",
+                choices=["nse", "bse", "nasdaq", "nyse", "crypto"])
     pr.add_argument("--days", type=int, default=900)
     pr.add_argument("--tickers", nargs="*", default=None)
     return p
@@ -149,7 +151,7 @@ def main(argv=None) -> int:
     elif args.cmd == "backtest":
         from hedgefund.backtest.engine import run_backtest
         from hedgefund.report import render_backtest
-        exchanges = (["nse", "bse", "nasdaq", "nyse"]
+        exchanges = (["nse", "bse", "nasdaq", "nyse", "crypto"]
                      if args.exchange == "all" else [args.exchange])
         for ex in exchanges:
             report = run_backtest(ex, brain.provider,
