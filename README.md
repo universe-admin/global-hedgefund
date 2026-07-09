@@ -104,6 +104,36 @@ WRITTEN THESIS — NVDA · today $193.00
 Risk policy (single-name cap, gross cap, stops, debate rounds, CAPM inputs,
 Monte Carlo paths) lives in `hedgefund/config.py` as one dataclass.
 
+### London Strategic Edge (licensed data feed)
+
+If you have an LSE Vault API key, export it and the router prefers it
+automatically for price history (candles) — no install needed, stdlib only:
+
+```bash
+export LSE_API_KEY=lse_live_...     # never commit this
+hedgefund lse-check BTC-USD         # verify connectivity + response shape
+hedgefund --data lse predict crypto
+```
+
+| Env var | Default | Meaning |
+|---|---|---|
+| `LSE_API_KEY` | — | your key; presence activates the provider |
+| `LSE_API_URL` | `https://api.londonstrategicedge.com/vault` | Vault base URL |
+| `LSE_CANDLES_PATH` | `/candles` | candles endpoint path, if your docs differ |
+
+The adapter sends the key as both `Authorization: Bearer` and `X-API-Key`,
+and parses candles from any common JSON shape (bare list or nested under
+`candles`/`data`/`results`, short or long OHLCV keys, ISO or epoch s/ms
+timestamps). `hedgefund lse-check` prints exactly what came back so a
+mismatched path or auth scheme is a one-line env fix. The LSE feed is
+price-focused: desk runs fall back gracefully for fundamentals/news, or
+force `--data yfinance` for full-snapshot desk runs. The WebSocket tick
+stream (`wss://data-ws.londonstrategicedge.com`) is not used — this desk
+trades daily bars.
+
+**Secret hygiene:** keys live in environment variables only. Nothing in this
+repo, its config files, or its state dir ever stores the key.
+
 ## Backtesting & next-day prediction (NSE · BSE · NASDAQ · NYSE · crypto)
 
 ```bash

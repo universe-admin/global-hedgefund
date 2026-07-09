@@ -36,7 +36,8 @@ def _build_parser() -> argparse.ArgumentParser:
                     "trader -> risk -> fund-manager verdict, with a learning "
                     "brain, a book, and an exit-rule engine.",
     )
-    p.add_argument("--data", choices=["auto", "openbb", "yfinance", "offline"],
+    p.add_argument("--data",
+               choices=["auto", "lse", "openbb", "yfinance", "offline"],
                    default=None, help="force a data provider")
     p.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -60,6 +61,11 @@ def _build_parser() -> argparse.ArgumentParser:
     grade.add_argument("run_id")
 
     sub.add_parser("scorecard", help="Hermes' graded hit rate")
+
+    lc = sub.add_parser(
+        "lse-check",
+        help="diagnose the London Strategic Edge API connection")
+    lc.add_argument("symbol", nargs="?", default="BTC-USD")
 
     bt = sub.add_parser(
         "backtest",
@@ -147,6 +153,10 @@ def main(argv=None) -> int:
 
     elif args.cmd == "scorecard":
         print(json.dumps(brain.memory.scorecard(), indent=2))
+
+    elif args.cmd == "lse-check":
+        from hedgefund.data.lse_provider import LSEProvider
+        print(LSEProvider().check(args.symbol))
 
     elif args.cmd == "backtest":
         from hedgefund.backtest.engine import run_backtest
